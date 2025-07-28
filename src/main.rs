@@ -27,7 +27,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Initializing tables");
 
     let db = Arc::new(Mutex::new(conn));
-    let user_router = Router::new().route("/", get(handlers::user_handlers::get_users));
+    let user_router = Router::new()
+        .route("/", get(handlers::user_handlers::get_users))
+        .route("/", post(handlers::user_handlers::create_user));
     // build our application with a route
     let app = Router::new().nest("/users", user_router).with_state(db);
 

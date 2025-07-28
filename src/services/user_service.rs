@@ -22,3 +22,16 @@ pub async fn get_users(db: Db) -> Result<Vec<models::user::User>, rusqlite::Erro
     }
     Ok(res)
 }
+pub async fn create_user(
+    db: Db,
+    user: models::user::UserCreation,
+) -> Result<models::user::UserCreation, rusqlite::Error> {
+    tracing::info!("Invocation to `create_user`");
+    let conn = db.lock().unwrap();
+    conn.execute(
+        "INSERT INTO (username, password, created_at, updated_at) VALUES (?, ?, NOW(), NOW());",
+        [user.username.as_str(), user.password.as_str()],
+    )
+    .unwrap();
+    Ok(user)
+}

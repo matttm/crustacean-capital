@@ -11,3 +11,8 @@ pub struct User {
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct UserCreation {
+    pub username: String,
+    pub password: String, // hidden from frontend
+}
