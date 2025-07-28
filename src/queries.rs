@@ -1,37 +1,40 @@
-/// SQL query to create the USER table.
+/// SQL query to create the USER table for SQLite.
 pub const CREATE_TABLE_USER: &str = r#"
 CREATE TABLE USER (
- 	id INT NOT NULL UNIQUE AUTO_INCREMENT,
- 	username VARCHAR (127) NOT NULL UNIQUE,
- 	password VARCHAR (127) NOT NULL, -- hashed + salt
- 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
- 	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
- 	PRIMARY KEY (id)
+ 	id INTEGER PRIMARY KEY, -- implies auto-increment in SQLite
+ 	username TEXT NOT NULL UNIQUE,
+ 	password TEXT NOT NULL,
+ 	created_at TEXT DEFAULT CURRENT_TIMESTAMP, -- SQLite uses TEXT for TIMESTAMP and DATETIME
+ 	updated_at TEXT DEFAULT CURRENT_TIMESTAMP -- ON UPDATE CURRENT_TIMESTAMP is not directly supported by SQLite
 );
 "#;
 
-/// SQL query to create the ACCOUNT table.
+/// SQL query to create the ACCOUNT table for SQLite.
 pub const CREATE_TABLE_ACCOUNT: &str = r#"
 CREATE TABLE ACCOUNT (
- 	id INT NOT NULL UNIQUE AUTO_INCREMENT,
-	account_number	VARCHAR (24) NOT NULL UNIQUE,
- 	user_id INT NOT NULL UNIQUE,
-	balance INT DEFAULT 0,
- 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
- 	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
- 	PRIMARY KEY (id)
+    id INTEGER PRIMARY KEY, -- implies auto-increment in SQLite
+    account_number TEXT NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL,
+    balance REAL NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP, -- SQLite uses TEXT for TIMESTAMP and DATETIME
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP, -- ON UPDATE CURRENT_TIMESTAMP is not directly supported by SQLite
+    CONSTRAINT fk_account_user FOREIGN KEY(user_id) REFERENCES USER(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
 "#;
 
-/// SQL query to create the TRANSACTION table.
+/// SQL query to create the TRANSACTION table for SQLite.
 pub const CREATE_TABLE_TRANSACTION: &str = r#"
-CREATE TABLE TRANSACTION (
- 	id INT NOT NULL UNIQUE AUTO_INCREMENT,
- 	account_number VARCHAR (24) NOT NULL UNIQUE,
-	seller VARCHAR (255) NOT NULL,
-	amount DECIMAL,
- 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
- 	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
- 	PRIMARY KEY (id)
+CREATE TABLE TRANSX (
+ 	id INTEGER PRIMARY KEY, -- implies auto-increment in SQLite
+ 	account_number TEXT NOT NULL UNIQUE,
+	seller TEXT NOT NULL,
+	amount REAL, -- DECIMAL is typically mapped to REAL in SQLite
+ 	created_at TEXT DEFAULT CURRENT_TIMESTAMP, -- SQLite uses TEXT for TIMESTAMP and DATETIME
+ 	updated_at TEXT DEFAULT CURRENT_TIMESTAMP, -- ON UPDATE CURRENT_TIMESTAMP is not directly supported by SQLite,
+	CONSTRAINT fk_tx_account FOREIGN KEY(account_number) REFERENCES ACCOUNT(account_number)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
 );
 "#;
