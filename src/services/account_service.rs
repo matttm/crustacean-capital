@@ -30,7 +30,7 @@ pub async fn create_account(
     tracing::info!("Invocation to `create_account`");
     let conn = db.lock().unwrap();
     let user_id = account_creation.user_id;
-    let account_number = generation_service
+    let account_number = generation_service::generate_numeric_string(20); // TODO: MAKE ENV
     conn.execute(
         "INSERT INTO (account_number, user_id, balance, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW());",
         [account_number, user_id, 0],
