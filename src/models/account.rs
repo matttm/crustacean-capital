@@ -1,7 +1,7 @@
 // src/models/account.rs
 // Defines the Account struct
 use chrono::NaiveDateTime;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Account {
@@ -11,4 +11,14 @@ pub struct Account {
     pub balance: i32, // INT, so i32
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+}
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct AccountGeneral {
+    pub account_number: String,
+    pub user_id: i32, // Foreign key, assuming it's always present
+    pub created_at: NaiveDateTime,
+}
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct AccountCreation {
+    pub user_id: i32, // Foreign key, assuming it's always present
 }
