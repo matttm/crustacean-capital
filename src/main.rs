@@ -30,8 +30,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let user_router = Router::new()
         .route("/", get(handlers::user_handlers::get_users))
         .route("/", post(handlers::user_handlers::create_user));
+    let account_router = Router::new()
+        .route("/", get(handlers::account_handlers::get_accounts))
+        .route("/", post(handlers::account_handlers::create_account));
     // build our application with a route
-    let app = Router::new().nest("/users", user_router).with_state(db);
+    let app = Router::new()
+        .nest("/users", user_router)
+        .nest("/accounts", account_router)
+        .with_state(db);
 
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;

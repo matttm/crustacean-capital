@@ -10,9 +10,9 @@ pub async fn get_users(db: Db) -> Result<Vec<models::user::User>, rusqlite::Erro
     let mut stmt = conn
         .prepare("SELECT id, username, created_at, updated_at FROM USERS;")
         .unwrap();
-    let mut raw = stmt.query(()).unwrap();
+    let mut raw = stmt.query(())?;
     let mut res: Vec<models::user::User> = vec![];
-    while let Some(row) = raw.next().unwrap() {
+    while let Some(row) = raw.next()? {
         res.push(models::user::User {
             id: row.get(0)?,
             username: row.get(1)?,
@@ -28,10 +28,9 @@ pub async fn create_user(
 ) -> Result<models::user::UserCreation, rusqlite::Error> {
     tracing::info!("Invocation to `create_user`");
     let conn = db.lock().unwrap();
-    conn.execute(
-        "INSERT INTO (username, password, created_at, updated_at) VALUES (?, ?, NOW(), NOW());",
+    let res = conn.execute(
+        "INSERT INTO USERS (username, password) VALUES (?, ?);",
         [user.username.as_str(), user.password.as_str()],
-    )
-    .unwrap();
+    )?;
     Ok(user)
 }
