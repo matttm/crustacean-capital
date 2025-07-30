@@ -1,6 +1,9 @@
 use crate::models;
 use axum::{Json, extract::State};
-use std::sync::{Arc, Mutex};
+use std::{
+    str::FromStr,
+    sync::{Arc, Mutex},
+};
 
 use crate::services::generation_service;
 
@@ -33,7 +36,7 @@ pub async fn create_account(
     let account_number = generation_service::generate_numeric_string(20); // TODO: MAKE ENV
     conn.execute(
         "INSERT INTO (account_number, user_id, balance, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW());",
-        [account_number, user_id, 0],
+        [account_number, user_id.to_string(), String::from_str("0").unwrap()],
     )
     .unwrap();
     Ok(account_creation)
