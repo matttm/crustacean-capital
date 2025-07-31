@@ -26,7 +26,7 @@ CREATE TABLE ACCOUNTS (
 
 /// SQL query to create the TRANSACTION table for SQLite.
 pub const CREATE_TABLE_TRANSACTION: &str = r#"
-CREATE TABLE TRANSXS (
+CREATE TABLE TRANSACTIONS (
  	id INTEGER PRIMARY KEY, -- implies auto-increment in SQLite
  	account_number TEXT NOT NULL UNIQUE,
 	seller TEXT NOT NULL,
