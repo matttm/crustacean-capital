@@ -33,13 +33,13 @@ pub async fn create_transaction(
     let tx = conn.transaction()?;
     // get account and checck balance
     let account_number = transaction_creation.account_number.to_string();
-    let balance: f32 = tx.query_one(
+    let mut balance: f32 = tx.query_one(
         "SELECT id, balance FROM ACCOUNTS;",
         [&account_number],
         |row| row.get(1),
     )?;
     if transaction_creation.amount > balance {
-        Err(())
+        return Err("Insufficient funds".into());
     }
     tx.execute(
         "INSERT INTO TRANSACTIONS (account_number, seller, amount) VALUES (?, ?, ?);",

@@ -33,10 +33,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let account_router = Router::new()
         .route("/", get(handlers::account_handlers::get_accounts))
         .route("/", post(handlers::account_handlers::create_account));
+    let transaction_router = Router::new()
+        .route("/", get(handlers::transaction_handlers::get_transactions))
+        .route(
+            "/",
+            post(handlers::transaction_handlers::create_transaction),
+        );
     // build our application with a route
     let app = Router::new()
         .nest("/users", user_router)
         .nest("/accounts", account_router)
+        .nest("/transactions", transaction_router)
         .with_state(db);
 
     // run our app with hyper, listening globally on port 3000
