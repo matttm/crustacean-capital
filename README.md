@@ -1,4 +1,4 @@
-# crustacean-cspital
+# crustacean-capital
 
 A transactional API exclusively for crab people (those dabbling in Rust).
 
