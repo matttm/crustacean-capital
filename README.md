@@ -12,6 +12,16 @@ Simply run it with:
 ```
 cargo run
 ```
+The implemented endpoints are:
+
+| Action | Path | Description |
+|---|---|---|
+| GGT | /users | get all users |
+| POST | /users | |
+| GGT | /accounts | |
+| POST | /accounts | |
+| GGT | /transactions | |
+| POST | /transactions | |
 
 ## Authors
 
