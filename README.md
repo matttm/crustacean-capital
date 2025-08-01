@@ -16,11 +16,11 @@ The implemented endpoints are:
 
 | Action | Path | Description |
 |---|---|---|
-| GGT | /users | get all users |
+| GET | /users | get all users |
 | POST | /users | |
-| GGT | /accounts | |
+| GET | /accounts | |
 | POST | /accounts | |
-| GGT | /transactions | |
+| GET | /transactions | |
 | POST | /transactions | |
 
 ## Authors
