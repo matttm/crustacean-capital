@@ -31,14 +31,28 @@ pub async fn create_transaction(
     tracing::info!("Invocation to `create_transaction`");
     let mut conn = db.lock().unwrap();
     let tx = conn.transaction()?;
+    // get account and checck balance
     let account_number = transaction_creation.account_number.to_string();
+    let balance: f32 = tx.query_one(
+        "SELECT id, balance FROM ACCOUNTS;",
+        [&account_number],
+        |row| row.get(1),
+    )?;
+    if transaction_creation.amount > balance {
+        Err(())
+    }
     tx.execute(
         "INSERT INTO TRANSACTIONS (account_number, seller, amount) VALUES (?, ?, ?);",
         [
-            account_number,
-            transaction_creation.seller.to_string(),
-            transaction_creation.amount.to_string(),
+            &account_number,
+            &transaction_creation.seller,
+            &transaction_creation.amount.to_string(),
         ],
+    )?;
+    balance -= transaction_creation.amount;
+    tx.execute(
+        "UPDATE ACCOUNTS SET balance WHERE account_number = ?;",
+        [balance.to_string(), account_number],
     )?;
     tx.commit()?;
     Ok(transaction_creation)
