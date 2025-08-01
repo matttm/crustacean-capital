@@ -4,16 +4,12 @@ pub mod queries;
 pub mod services;
 
 use axum::{
-    Json, Router,
-    extract::State,
-    http::StatusCode,
+    Router,
     routing::{get, post},
 };
 use queries::{CREATE_TABLE_ACCOUNT, CREATE_TABLE_TRANSACTION, CREATE_TABLE_USER};
 use rusqlite::{Connection, Result};
 use std::sync::{Arc, Mutex};
-
-type Db = Arc<Mutex<rusqlite::Connection>>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
