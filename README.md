@@ -1,8 +1,17 @@
-# gate-keeper
+# crustacean-cspital
+
+A transactional API exclusively for crab people (those dabbling in Rust).
 
 ## Description
 
+A simple web server written in Rust.
+
 ## Getting started
+
+Simply run it with:
+```
+cargo run
+```
 
 ## Authors
 
