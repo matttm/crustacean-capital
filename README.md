@@ -12,6 +12,10 @@ Simply run it with:
 ```
 cargo run
 ```
+Run tests with:
+```
+cargo test
+```
 The implemented endpoints are:
 
 | Action | Path | Description |
