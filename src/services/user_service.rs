@@ -1,7 +1,6 @@
 use crate::models;
-use crate::models::user::{User, UserCreation};
-use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
+use rusqlite::Connection;
 
 type Db = Arc<Mutex<rusqlite::Connection>>;
 
@@ -52,7 +51,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_user_and_get_users() {
         let db = setup_db();
-        let user = UserCreation {
+        let user = models::user::UserCreation {
             username: "testuser".to_string(),
             password: "password123".to_string(),
         };
@@ -73,11 +72,11 @@ mod tests {
     #[tokio::test]
     async fn test_create_multiple_users_and_get_users() {
         let db = setup_db();
-        let user1 = UserCreation {
+        let user1 = models::user::UserCreation {
             username: "alice".to_string(),
             password: "alicepass".to_string(),
         };
-        let user2 = UserCreation {
+        let user2 = models::user::UserCreation {
             username: "bob".to_string(),
             password: "bobpass".to_string(),
         };
@@ -93,14 +92,14 @@ mod tests {
     #[tokio::test]
     async fn test_create_user_with_duplicate_username() {
         let db = setup_db();
-        let user = UserCreation {
+        let user = models::user::UserCreation {
             username: "duplicate".to_string(),
             password: "pass1".to_string(),
         };
         create_user(db.clone(), user.clone()).await.unwrap();
 
         // Try to create another user with the same username
-        let duplicate_user = UserCreation {
+        let duplicate_user = models::user::UserCreation {
             username: "duplicate".to_string(),
             password: "pass2".to_string(),
         };
@@ -111,7 +110,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_user_with_empty_username_and_password() {
         let db = setup_db();
-        let user = UserCreation {
+        let user = models::user::UserCreation {
             username: "".to_string(),
             password: "".to_string(),
         };
@@ -123,7 +122,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_user_and_check_timestamps() {
         let db = setup_db();
-        let user = UserCreation {
+        let user = models::user::UserCreation {
             username: "timestamp_user".to_string(),
             password: "ts_pass".to_string(),
         };
