@@ -1,11 +1,12 @@
 use crate::models;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 type Db = Arc<Mutex<rusqlite::Connection>>;
 
 pub async fn get_users(db: Db) -> Result<Vec<models::user::User>, rusqlite::Error> {
     tracing::info!("Invocation to `get_users`");
-    let conn = db.lock().unwrap();
+    let conn = db.lock().await;
     let mut stmt = conn.prepare("SELECT id, username, created_at, updated_at FROM USERS;")?;
     let mut raw = stmt.query(())?;
     let mut res: Vec<models::user::User> = vec![];
@@ -21,7 +22,7 @@ pub async fn get_users(db: Db) -> Result<Vec<models::user::User>, rusqlite::Erro
 }
 pub async fn get_user(db: Db, id: i64) -> Result<models::user::User, rusqlite::Error> {
     tracing::info!("Invocation to `get_user`");
-    let conn = db.lock().unwrap();
+    let conn = db.lock().await;
     let mut stmt =
         conn.prepare("SELECT id, username, created_at, updated_at FROM USERS WHERE user_id = ?;")?;
     let res = stmt.query_one([&id], |row| {
@@ -39,7 +40,7 @@ pub async fn create_user(
     user: models::user::UserCreation,
 ) -> Result<models::user::User, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `create_user`");
-    let conn = db.lock().unwrap();
+    let conn = db.lock().await;
     if user.username.is_empty() || user.password.is_empty() {
         return Err("Missing required fields".into());
     }
@@ -143,7 +144,7 @@ mod tests {
         };
         create_user(db.clone(), user.clone()).await.unwrap();
 
-        let conn = db.lock().unwrap();
+        let conn = db.lock().await;
         let mut stmt = conn
             .prepare("SELECT created_at, updated_at FROM USERS WHERE username = ?")
             .unwrap();

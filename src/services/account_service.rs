@@ -1,11 +1,8 @@
 use crate::models;
-use std::{
-    str::FromStr,
-    sync::{Arc, Mutex},
-};
-
 use crate::services::{generation_service, user_service};
 use rusqlite::Connection;
+use std::{str::FromStr, sync::Arc};
+use tokio::sync::Mutex;
 
 type Db = Arc<Mutex<rusqlite::Connection>>;
 
@@ -13,7 +10,7 @@ pub async fn get_accounts(
     db: Db,
 ) -> Result<Vec<models::account::AccountGeneral>, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `get_accounts`");
-    let conn = db.lock().unwrap();
+    let conn = db.lock().await;
     let mut stmt = conn.prepare("SELECT account_number, user_id, created_at FROM ACCOUNTS;")?;
     let mut raw = stmt.query(())?;
     let mut res: Vec<models::account::AccountGeneral> = vec![];
@@ -31,7 +28,7 @@ pub async fn get_account(
     id: i64,
 ) -> Result<models::account::AccountGeneral, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `get_accounts`");
-    let conn = db.lock().unwrap();
+    let conn = db.lock().await;
     let mut stmt =
         conn.prepare("SELECT account_number, user_id, created_at FROM ACCOUNTS WHERE id = ?;")?;
     let account = stmt.query_one([&id], |row| {
@@ -48,7 +45,7 @@ pub async fn create_account(
     account_creation: models::account::AccountCreation,
 ) -> Result<models::account::AccountGeneral, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `create_account`");
-    let conn = db.lock().unwrap();
+    let conn = db.lock().await;
     let user_id = account_creation.user_id;
     let account_number = generation_service::generate_numeric_string(20); // TODO: MAKE ENV
     conn.execute(

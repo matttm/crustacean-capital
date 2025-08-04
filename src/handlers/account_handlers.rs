@@ -1,7 +1,8 @@
 use crate::models;
 use crate::services;
 use axum::{Json, extract::State};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 type Db = Arc<Mutex<rusqlite::Connection>>;
 

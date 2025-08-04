@@ -1,10 +1,8 @@
 use crate::models;
 use crate::models::transaction::{TransactionCreation, TransactionGeneral};
 use rusqlite::Connection;
-use std::{
-    str::FromStr,
-    sync::{Arc, Mutex},
-};
+use std::{str::FromStr, sync::Arc};
+use tokio::sync::Mutex;
 
 type Db = Arc<Mutex<rusqlite::Connection>>;
 
@@ -12,7 +10,7 @@ pub async fn get_transactions(
     db: Db,
 ) -> Result<Vec<models::transaction::TransactionGeneral>, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `get_transactions`");
-    let conn = db.lock().unwrap();
+    let conn = db.lock().await;
     let mut stmt = conn.prepare("SELECT id, account_number, seller, amount FROM TRANSACTIONS;")?;
     let mut raw = stmt.query(())?;
     let mut res: Vec<models::transaction::TransactionGeneral> = vec![];
@@ -31,7 +29,7 @@ pub async fn create_transaction(
     transaction_creation: models::transaction::TransactionCreation,
 ) -> Result<models::transaction::TransactionCreation, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `create_transaction`");
-    let mut conn = db.lock().unwrap();
+    let mut conn = db.lock().await;
     let tx = conn.transaction()?;
     // get account and checck balance
     let account_number = transaction_creation.account_number.to_string();
@@ -160,7 +158,7 @@ mod tests {
         };
         create_transaction(db.clone(), tx).await.unwrap();
 
-        let conn = db.lock().unwrap();
+        let conn = db.lock().await;
         let mut stmt = conn
             .prepare("SELECT balance FROM ACCOUNTS WHERE account_number = '12345';")
             .unwrap();
@@ -191,7 +189,7 @@ mod tests {
         let result = create_transaction(db.clone(), tx.clone()).await.unwrap();
         assert_eq!(result.amount, 0.0);
 
-        let conn = db.lock().unwrap();
+        let conn = db.lock().await;
         let mut stmt = conn
             .prepare("SELECT balance FROM ACCOUNTS WHERE account_number = '12345';")
             .unwrap();
@@ -211,4 +209,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-
