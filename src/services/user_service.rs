@@ -1,6 +1,5 @@
 use crate::models;
 use std::sync::{Arc, Mutex};
-use rusqlite::Connection;
 
 type Db = Arc<Mutex<rusqlite::Connection>>;
 
@@ -20,20 +19,36 @@ pub async fn get_users(db: Db) -> Result<Vec<models::user::User>, rusqlite::Erro
     }
     Ok(res)
 }
+pub async fn get_user(db: Db, id: i64) -> Result<models::user::User, rusqlite::Error> {
+    tracing::info!("Invocation to `get_user`");
+    let conn = db.lock().unwrap();
+    let mut stmt =
+        conn.prepare("SELECT id, username, created_at, updated_at FROM USERS WHERE user_id = ?;")?;
+    let res = stmt.query_one([&id], |row| {
+        Ok(models::user::User {
+            id: row.get(0)?,
+            username: row.get(1)?,
+            created_at: row.get(2)?,
+            updated_at: row.get(3)?,
+        })
+    });
+    res
+}
 pub async fn create_user(
     db: Db,
     user: models::user::UserCreation,
-) -> Result<models::user::UserCreation, Box<dyn std::error::Error>> {
+) -> Result<models::user::User, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `create_user`");
     let conn = db.lock().unwrap();
     if user.username.is_empty() || user.password.is_empty() {
-        return Err("".into());
+        return Err("Missing required fields".into());
     }
     conn.execute(
         "INSERT INTO USERS (username, password) VALUES (?, ?);",
         [user.username.as_str(), user.password.as_str()],
     )?;
-    Ok(user)
+    let created = get_user(db.clone(), conn.last_insert_rowid()).await?;
+    Ok(created)
 }
 
 #[cfg(test)]
@@ -43,7 +58,7 @@ mod tests {
     use super::*;
 
     fn setup_db() -> Db {
-        let conn = Connection::open_in_memory().unwrap();
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
         conn.execute(queries::CREATE_TABLE_USER, []).unwrap();
         Arc::new(Mutex::new(conn))
     }

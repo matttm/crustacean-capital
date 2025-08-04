@@ -15,7 +15,7 @@ pub async fn get_accounts(State(db): State<Db>) -> Json<Vec<models::account::Acc
 pub async fn create_account(
     State(db): State<Db>,
     account: Json<models::account::AccountCreation>,
-) -> Json<models::account::AccountCreation> {
+) -> Json<models::account::AccountGeneral> {
     tracing::info!("Invocation to `create_accounts`");
     let res = services::account_service::create_account(db, account.0).await;
     Json(res.unwrap())

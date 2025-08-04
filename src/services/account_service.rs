@@ -26,10 +26,27 @@ pub async fn get_accounts(
     }
     Ok(res)
 }
+pub async fn get_account(
+    db: Db,
+    id: i64,
+) -> Result<models::account::AccountGeneral, Box<dyn std::error::Error>> {
+    tracing::info!("Invocation to `get_accounts`");
+    let conn = db.lock().unwrap();
+    let mut stmt =
+        conn.prepare("SELECT account_number, user_id, created_at FROM ACCOUNTS WHERE id = ?;")?;
+    let account = stmt.query_one([&id], |row| {
+        Ok(models::account::AccountGeneral {
+            account_number: row.get(0)?,
+            user_id: row.get(1)?,
+            created_at: row.get(2)?,
+        })
+    })?;
+    Ok(account)
+}
 pub async fn create_account(
     db: Db,
     account_creation: models::account::AccountCreation,
-) -> Result<models::account::AccountCreation, Box<dyn std::error::Error>> {
+) -> Result<models::account::AccountGeneral, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `create_account`");
     let conn = db.lock().unwrap();
     let user_id = account_creation.user_id;
@@ -38,7 +55,8 @@ pub async fn create_account(
         "INSERT INTO ACCOUNTS (account_number, user_id, balance) VALUES (?, ?, ?);",
         [account_number, user_id.to_string(), String::from_str("0")?],
     )?;
-    Ok(account_creation)
+    let created = get_account(db.clone(), conn.last_insert_rowid()).await?;
+    Ok(created)
 }
 
 #[cfg(test)]
@@ -153,4 +171,3 @@ mod tests {
         assert_eq!(count, 2);
     }
 }
-
