@@ -1,54 +1,40 @@
 use crate::models;
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use sqlx::SqlitePool;
 
-type Db = Arc<Mutex<rusqlite::Connection>>;
+type Db = SqlitePool;
 
-pub async fn get_users(db: Db) -> Result<Vec<models::user::User>, rusqlite::Error> {
+pub async fn get_users(db: Db) -> Result<Vec<models::user::User>, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `get_users`");
-    let conn = db.lock().await;
-    let mut stmt = conn.prepare("SELECT id, username, created_at, updated_at FROM USERS;")?;
-    let mut raw = stmt.query(())?;
-    let mut res: Vec<models::user::User> = vec![];
-    while let Some(row) = raw.next()? {
-        res.push(models::user::User {
-            id: row.get(0)?,
-            username: row.get(1)?,
-            created_at: row.get(2)?,
-            updated_at: row.get(3)?,
-        })
-    }
-    Ok(res)
+    let users: Vec<models::user::User> =
+        sqlx::query_as("SELECT id, username, created_at, updated_at FROM USERS;")
+            .fetch_all(&db)
+            .await?;
+    Ok(users)
 }
-pub async fn get_user(db: Db, id: i64) -> Result<models::user::User, rusqlite::Error> {
+pub async fn get_user(db: Db, id: i64) -> Result<models::user::User, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `get_user`");
-    let conn = db.lock().await;
-    let mut stmt =
-        conn.prepare("SELECT id, username, created_at, updated_at FROM USERS WHERE user_id = ?;")?;
-    let res = stmt.query_one([&id], |row| {
-        Ok(models::user::User {
-            id: row.get(0)?,
-            username: row.get(1)?,
-            created_at: row.get(2)?,
-            updated_at: row.get(3)?,
-        })
-    });
-    res
+    let user: models::user::User =
+        sqlx::query_as("SELECT id, username, created_at, updated_at FROM USERS WHERE user_id = ?;")
+            .bind(&id)
+            .fetch_one(&db)
+            .await?;
+    Ok(user)
 }
 pub async fn create_user(
     db: Db,
     user: models::user::UserCreation,
 ) -> Result<models::user::User, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `create_user`");
-    let conn = db.lock().await;
     if user.username.is_empty() || user.password.is_empty() {
         return Err("Missing required fields".into());
     }
-    conn.execute(
-        "INSERT INTO USERS (username, password) VALUES (?, ?);",
-        [user.username.as_str(), user.password.as_str()],
-    )?;
-    let created = get_user(db.clone(), conn.last_insert_rowid()).await?;
+    let res = sqlx::query("INSERT INTO USERS (username, password) VALUES (?, ?);")
+        .bind(user.username.as_str())
+        .bind(user.password.as_str())
+        .execute(&db)
+        .await?;
+
+    let created = get_user(db, res.last_insert_rowid()).await?;
     Ok(created)
 }
 
@@ -144,7 +130,6 @@ mod tests {
         };
         create_user(db.clone(), user.clone()).await.unwrap();
 
-        let conn = db.lock().await;
         let mut stmt = conn
             .prepare("SELECT created_at, updated_at FROM USERS WHERE username = ?")
             .unwrap();

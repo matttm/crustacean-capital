@@ -1,10 +1,9 @@
 use crate::models;
 use crate::services;
 use axum::{Json, extract::State};
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use sqlx::SqlitePool;
 
-type Db = Arc<Mutex<rusqlite::Connection>>;
+type Db = SqlitePool;
 
 #[axum::debug_handler]
 pub async fn get_users(State(db): State<Db>) -> Json<Vec<models::user::User>> {
