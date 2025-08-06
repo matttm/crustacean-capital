@@ -21,11 +21,11 @@ The implemented endpoints are:
 | Action | Path | Description |
 |---|---|---|
 | GET | /users | get all users |
-| POST | /users | |
-| GET | /accounts | |
-| POST | /accounts | |
-| GET | /transactions | |
-| POST | /transactions | |
+| POST | /users | create a user |
+| GET | /accounts | get all accounts |
+| POST | /accounts | create an account |
+| GET | /transactions | get all transactions |
+| POST | /transactions | create a transaction |
 
 ## Authors
 
