@@ -17,7 +17,7 @@ pub async fn get_user(
 ) -> Result<models::user::User, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `get_user`");
     let user: models::user::User =
-        sqlx::query_as("SELECT id, username, created_at, updated_at FROM USERS WHERE user_id = ?;")
+        sqlx::query_as("SELECT id, username, created_at, updated_at FROM USERS WHERE id = ?;")
             .bind(&id)
             .fetch_one(pool)
             .await?;
@@ -48,7 +48,7 @@ mod tests {
     use super::*;
 
     async fn setup_pool() -> SqlitePool {
-        let pool = SqlitePool::connect("sqlite::inmemory:").await.unwrap();
+        let pool = SqlitePool::connect(":memory:").await.unwrap();
         sqlx::query(queries::CREATE_TABLE_USER)
             .execute(&pool)
             .await
