@@ -10,7 +10,7 @@ pub async fn get_accounts(
 ) -> Result<Vec<models::account::AccountGeneral>, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `get_accounts`");
     let res: Vec<models::account::AccountGeneral> =
-        sqlx::query_as("SELECT account_number, user_id, created_at FROM ACCOUNTS;")
+        sqlx::query_as("SELECT account_number, user_id, balance, created_at FROM ACCOUNTS;")
             .fetch_all(pool)
             .await?;
     Ok(res)
@@ -19,12 +19,26 @@ pub async fn get_account(
     pool: &SqlitePool,
     id: i64,
 ) -> Result<models::account::AccountGeneral, Box<dyn std::error::Error>> {
-    tracing::info!("Invocation to `get_accounts`");
-    let account: models::account::AccountGeneral =
-        sqlx::query_as("SELECT account_number, user_id, created_at FROM ACCOUNTS WHERE id = ?;")
-            .bind(&id)
-            .fetch_one(pool)
-            .await?;
+    tracing::info!("Invocation to `get_account`");
+    let account: models::account::AccountGeneral = sqlx::query_as(
+        "SELECT account_number, user_id, balance, created_at FROM ACCOUNTS WHERE id = ?;",
+    )
+    .bind(&id)
+    .fetch_one(pool)
+    .await?;
+    Ok(account)
+}
+pub async fn get_account_by_account_number(
+    pool: &SqlitePool,
+    account_number: String,
+) -> Result<models::account::AccountGeneral, Box<dyn std::error::Error>> {
+    tracing::info!("Invocation to `get_account_by_account_number`");
+    let account: models::account::AccountGeneral = sqlx::query_as(
+        "SELECT account_number, user_id, balance, created_at FROM ACCOUNTS WHERE account_number = ?;",
+    )
+    .bind(&account_number)
+    .fetch_one(pool)
+    .await?;
     Ok(account)
 }
 pub async fn create_account(

@@ -22,7 +22,7 @@ pub async fn create_transaction(
     let mut tx = db.begin().await?;
     // get account and checck balance
     let account_number = transaction_creation.account_number.to_string();
-    let mut balance: Option<f32> =
+    let mut balance: f32 =
         sqlx::query_scalar("SELECT balance FROM ACCOUNTS WHERE account_number = ?;")
             .bind(&account_number)
             .fetch_one(&mut *tx)
@@ -55,26 +55,35 @@ mod tests {
 
     use super::*;
 
-    fn setup_db() -> DbSqlitePool {
-        let conn = Connection::open_in_memory().unwrap();
-        conn.execute(queries::CREATE_TABLE_USER, []).unwrap();
-        conn.execute(queries::CREATE_TABLE_ACCOUNT, []).unwrap();
-        conn.execute(queries::CREATE_TABLE_TRANSACTION, []).unwrap();
-        Arc::new(Mutex::new(conn))
+    async fn setup_db() -> SqlitePool {
+        let pool = SqlitePool::connect("sqlite::inmemory:").await.unwrap();
+        sqlx::query(queries::CREATE_TABLE_USER)
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query(queries::CREATE_TABLE_ACCOUNT)
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query(queries::CREATE_TABLE_TRANSACTION)
+            .execute(&pool)
+            .await
+            .unwrap();
+        pool
     }
 
     #[tokio::test]
     async fn test_get_transactions_empty() {
-        let db = setup_db();
-        let result = get_transactions(db).await.unwrap();
+        let db = setup_db().await;
+        let result = get_transactions(&db).await.unwrap();
         assert!(result.is_empty());
     }
 
     #[tokio::test]
     async fn test_create_transaction_success() {
-        let db = setup_db();
+        let db = setup_db().await;
         let _ = user_service::create_user(
-            db.clone(),
+            &db,
             models::user::UserCreation {
                 username: "test_user".to_string(),
                 password: "password".to_string(),
@@ -83,7 +92,7 @@ mod tests {
         .await
         .unwrap();
         let account_creation = models::account::AccountCreation { user_id: 1 };
-        let _ = account_service::create_account(db.clone(), account_creation.clone())
+        let _ = account_service::create_account(&db, account_creation.clone())
             .await
             .unwrap();
         let tx = TransactionCreation {
@@ -91,12 +100,12 @@ mod tests {
             seller: "TestSeller".to_string(),
             amount: 50.0,
         };
-        let result = create_transaction(db.clone(), tx.clone()).await.unwrap();
+        let result = create_transaction(&db, tx.clone()).await.unwrap();
         assert_eq!(result.account_number, "12345");
         assert_eq!(result.seller, "TestSeller");
         assert_eq!(result.amount, 50.0);
 
-        let transactions = get_transactions(db).await.unwrap();
+        let transactions = get_transactions(&db).await.unwrap();
         assert_eq!(transactions.len(), 1);
         assert_eq!(transactions[0].account_number, "12345");
         assert_eq!(transactions[0].seller, "TestSeller");
@@ -105,20 +114,20 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_transaction_insufficient_funds() {
-        let db = setup_db();
+        let db = setup_db().await;
         let tx = TransactionCreation {
             account_number: "12345".to_string(),
             seller: "TestSeller".to_string(),
             amount: 200.0,
         };
-        let result = create_transaction(db, tx).await;
+        let result = create_transaction(&db, tx).await;
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().to_string(), "Insufficient funds");
     }
 
     #[tokio::test]
     async fn test_get_transactions_multiple() {
-        let db = setup_db();
+        let db = setup_db().await;
         let tx1 = TransactionCreation {
             account_number: "12345".to_string(),
             seller: "Seller1".to_string(),
@@ -129,71 +138,67 @@ mod tests {
             seller: "Seller2".to_string(),
             amount: 20.0,
         };
-        create_transaction(db.clone(), tx1).await.unwrap();
-        create_transaction(db.clone(), tx2).await.unwrap();
+        create_transaction(&db, tx1).await.unwrap();
+        create_transaction(&db, tx2).await.unwrap();
 
-        let transactions = get_transactions(db).await.unwrap();
+        let transactions = get_transactions(&db).await.unwrap();
         assert_eq!(transactions.len(), 2);
         assert_eq!(transactions[0].seller, "Seller1");
         assert_eq!(transactions[1].seller, "Seller2");
     }
     async fn test_create_transaction_updates_balance() {
-        let db = setup_db();
+        let db = setup_db().await;
         let tx = TransactionCreation {
             account_number: "12345".to_string(),
             seller: "SellerA".to_string(),
             amount: 40.0,
         };
-        create_transaction(db.clone(), tx).await.unwrap();
+        create_transaction(&db, tx).await.unwrap();
 
-        let conn = db.lock().await;
-        let mut stmt = conn
-            .prepare("SELECT balance FROM ACCOUNTS WHERE account_number = '12345';")
+        let account = account_service::get_account_by_account_number(&db, "12345".to_string())
+            .await
             .unwrap();
-        let balance: f32 = stmt.query_row([], |row| row.get(0)).unwrap();
-        assert_eq!(balance, 60.0);
+        assert_eq!(account.balance, 60.0);
     }
 
     #[tokio::test]
     async fn test_create_transaction_invalid_account() {
-        let db = setup_db();
+        let db = setup_db().await;
         let tx = TransactionCreation {
             account_number: "99999".to_string(),
             seller: "SellerB".to_string(),
             amount: 10.0,
         };
-        let result = create_transaction(db, tx).await;
+        let result = create_transaction(&db, tx).await;
         assert!(result.is_err());
     }
 
     #[tokio::test]
     async fn test_create_transaction_zero_amount() {
-        let db = setup_db();
+        let db = setup_db().await;
         let tx = TransactionCreation {
             account_number: "12345".to_string(),
             seller: "SellerC".to_string(),
             amount: 0.0,
         };
-        let result = create_transaction(db.clone(), tx.clone()).await.unwrap();
+        let result = create_transaction(&db, tx.clone()).await.unwrap();
         assert_eq!(result.amount, 0.0);
 
-        let conn = db.lock().await;
-        let mut stmt = conn
-            .prepare("SELECT balance FROM ACCOUNTS WHERE account_number = '12345';")
+        let account = account_service::get_account_by_account_number(&db, "12345".to_string())
+            .await
             .unwrap();
-        let balance: f32 = stmt.query_row([], |row| row.get(0)).unwrap();
-        assert_eq!(balance, 100.0);
+        assert_eq!(account.balance, 100.0);
     }
 
     #[tokio::test]
     async fn test_create_transaction_negative_amount() {
-        let db = setup_db();
+        let db = setup_db().await;
         let tx = TransactionCreation {
             account_number: "12345".to_string(),
             seller: "SellerD".to_string(),
             amount: -10.0,
         };
-        let result = create_transaction(db, tx).await;
+        let result = create_transaction(&db, tx).await;
         assert!(result.is_err());
     }
 }
