@@ -66,7 +66,7 @@ mod tests {
     use super::*;
 
     async fn setup_db() -> SqlitePool {
-        let pool = SqlitePool::connect("sqlite::inmemory:").await.unwrap();
+        let pool = SqlitePool::connect(":memory:").await.unwrap();
         sqlx::query(queries::CREATE_TABLE_USER)
             .execute(&pool)
             .await

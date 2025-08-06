@@ -37,7 +37,7 @@ pub async fn create_transaction(
         .execute(&mut *tx)
         .await?;
     balance -= transaction_creation.amount;
-    sqlx::query("UPDATE ACCOUNTS SET balance WHERE account_number = ?;")
+    sqlx::query("UPDATE ACCOUNTS SET balance = ? WHERE account_number = ?;")
         .bind(balance.to_string())
         .bind(account_number)
         .execute(&mut *tx)
@@ -56,7 +56,7 @@ mod tests {
     use super::*;
 
     async fn setup_db() -> SqlitePool {
-        let pool = SqlitePool::connect("sqlite::inmemory:").await.unwrap();
+        let pool = SqlitePool::connect(":memory:").await.unwrap();
         sqlx::query(queries::CREATE_TABLE_USER)
             .execute(&pool)
             .await
@@ -92,24 +92,25 @@ mod tests {
         .await
         .unwrap();
         let account_creation = models::account::AccountCreation { user_id: 1 };
-        let _ = account_service::create_account(&db, account_creation.clone())
+        let account = account_service::create_account(&db, account_creation.clone())
             .await
             .unwrap();
+        let anumber = account.account_number.clone();
         let tx = TransactionCreation {
-            account_number: "12345".to_string(),
+            account_number: anumber.clone(),
             seller: "TestSeller".to_string(),
-            amount: 50.0,
+            amount: -50.0,
         };
         let result = create_transaction(&db, tx.clone()).await.unwrap();
-        assert_eq!(result.account_number, "12345");
+        assert_eq!(result.account_number, anumber.clone());
         assert_eq!(result.seller, "TestSeller");
-        assert_eq!(result.amount, 50.0);
+        assert_eq!(result.amount, -50.0);
 
         let transactions = get_transactions(&db).await.unwrap();
         assert_eq!(transactions.len(), 1);
-        assert_eq!(transactions[0].account_number, "12345");
+        assert_eq!(transactions[0].account_number, anumber.clone());
         assert_eq!(transactions[0].seller, "TestSeller");
-        assert_eq!(transactions[0].amount, 50.0);
+        assert_eq!(transactions[0].amount, -50.0);
     }
 
     #[tokio::test]
