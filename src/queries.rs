@@ -28,7 +28,7 @@ CREATE TABLE ACCOUNTS (
 pub const CREATE_TABLE_TRANSACTION: &str = r#"
 CREATE TABLE TRANSACTIONS (
  	id INTEGER PRIMARY KEY, -- implies auto-increment in SQLite
- 	account_number TEXT NOT NULL UNIQUE,
+ 	account_number TEXT NOT NULL,
 	seller TEXT NOT NULL,
 	amount REAL, -- DECIMAL is typically mapped to REAL in SQLite
  	created_at TEXT DEFAULT CURRENT_TIMESTAMP, -- SQLite uses TEXT for TIMESTAMP and DATETIME

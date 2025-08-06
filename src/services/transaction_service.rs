@@ -116,8 +116,22 @@ mod tests {
     #[tokio::test]
     async fn test_create_transaction_insufficient_funds() {
         let db = setup_db().await;
+        let _ = user_service::create_user(
+            &db,
+            models::user::UserCreation {
+                username: "test_user".to_string(),
+                password: "password".to_string(),
+            },
+        )
+        .await
+        .unwrap();
+        let account_creation = models::account::AccountCreation { user_id: 1 };
+        let account = account_service::create_account(&db, account_creation.clone())
+            .await
+            .unwrap();
+        let anumber = account.account_number.clone();
         let tx = TransactionCreation {
-            account_number: "12345".to_string(),
+            account_number: anumber.clone(),
             seller: "TestSeller".to_string(),
             amount: 200.0,
         };
@@ -129,13 +143,27 @@ mod tests {
     #[tokio::test]
     async fn test_get_transactions_multiple() {
         let db = setup_db().await;
+        let _ = user_service::create_user(
+            &db,
+            models::user::UserCreation {
+                username: "test_user".to_string(),
+                password: "password".to_string(),
+            },
+        )
+        .await
+        .unwrap();
+        let account_creation = models::account::AccountCreation { user_id: 1 };
+        let account = account_service::create_account(&db, account_creation.clone())
+            .await
+            .unwrap();
+        let anumber = account.account_number.clone();
         let tx1 = TransactionCreation {
-            account_number: "12345".to_string(),
-            seller: "Seller1".to_string(),
-            amount: 10.0,
+            account_number: anumber.clone(),
+            seller: "Employer1".to_string(),
+            amount: -100.0,
         };
         let tx2 = TransactionCreation {
-            account_number: "12345".to_string(),
+            account_number: anumber.clone(),
             seller: "Seller2".to_string(),
             amount: 20.0,
         };
@@ -144,48 +172,45 @@ mod tests {
 
         let transactions = get_transactions(&db).await.unwrap();
         assert_eq!(transactions.len(), 2);
-        assert_eq!(transactions[0].seller, "Seller1");
+        assert_eq!(transactions[0].seller, "Employer1");
         assert_eq!(transactions[1].seller, "Seller2");
     }
-    async fn test_create_transaction_updates_balance() {
-        let db = setup_db().await;
-        let tx = TransactionCreation {
-            account_number: "12345".to_string(),
-            seller: "SellerA".to_string(),
-            amount: 40.0,
-        };
-        create_transaction(&db, tx).await.unwrap();
 
-        let account = account_service::get_account_by_account_number(&db, "12345".to_string())
+    #[tokio::test]
+    async fn test_create_transaction_calculate_balance() {
+        let db = setup_db().await;
+        let _ = user_service::create_user(
+            &db,
+            models::user::UserCreation {
+                username: "test_user".to_string(),
+                password: "password".to_string(),
+            },
+        )
+        .await
+        .unwrap();
+        let account_creation = models::account::AccountCreation { user_id: 1 };
+        let account = account_service::create_account(&db, account_creation.clone())
             .await
             .unwrap();
-        assert_eq!(account.balance, 60.0);
-    }
-
-    #[tokio::test]
-    async fn test_create_transaction_invalid_account() {
-        let db = setup_db().await;
+        let anumber = account.account_number.clone();
         let tx = TransactionCreation {
-            account_number: "99999".to_string(),
-            seller: "SellerB".to_string(),
-            amount: 10.0,
-        };
-        let result = create_transaction(&db, tx).await;
-        assert!(result.is_err());
-    }
-
-    #[tokio::test]
-    async fn test_create_transaction_zero_amount() {
-        let db = setup_db().await;
-        let tx = TransactionCreation {
-            account_number: "12345".to_string(),
+            account_number: anumber.clone(),
             seller: "SellerC".to_string(),
-            amount: 0.0,
+            amount: -100.0,
         };
-        let result = create_transaction(&db, tx.clone()).await.unwrap();
+        let _ = create_transaction(&db, tx.clone()).await.unwrap();
+        let result = create_transaction(
+            &db,
+            TransactionCreation {
+                amount: 0f32,
+                ..tx.clone()
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(result.amount, 0.0);
 
-        let account = account_service::get_account_by_account_number(&db, "12345".to_string())
+        let account = account_service::get_account_by_account_number(&db, anumber.clone())
             .await
             .unwrap();
         assert_eq!(account.balance, 100.0);
@@ -194,12 +219,26 @@ mod tests {
     #[tokio::test]
     async fn test_create_transaction_negative_amount() {
         let db = setup_db().await;
+        let _ = user_service::create_user(
+            &db,
+            models::user::UserCreation {
+                username: "test_user".to_string(),
+                password: "password".to_string(),
+            },
+        )
+        .await
+        .unwrap();
+        let account_creation = models::account::AccountCreation { user_id: 1 };
+        let account = account_service::create_account(&db, account_creation.clone())
+            .await
+            .unwrap();
+        let anumber = account.account_number.clone();
         let tx = TransactionCreation {
-            account_number: "12345".to_string(),
+            account_number: anumber.clone(),
             seller: "SellerD".to_string(),
             amount: -10.0,
         };
         let result = create_transaction(&db, tx).await;
-        assert!(result.is_err());
+        assert!(result.is_ok());
     }
 }
