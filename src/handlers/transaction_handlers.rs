@@ -16,7 +16,8 @@ pub async fn create_transaction(
     State(db): State<SqlitePool>,
     transaction: Json<models::transaction::TransactionCreation>,
 ) -> Json<models::transaction::TransactionCreation> {
+    let mut tx = db.begin().await?;
     tracing::info!("Invocation to `create_transactions`");
-    let res = services::transaction_service::create_transaction(&db, transaction.0).await;
+    let res = services::transaction_service::create_transaction(&tx, transaction.0).await;
     Json(res.unwrap())
 }

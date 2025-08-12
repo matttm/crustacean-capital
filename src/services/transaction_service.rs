@@ -1,5 +1,6 @@
 use sqlx::SqlitePool;
 
+use crate::enums;
 use crate::models;
 use crate::models::transaction::{TransactionCreation, TransactionGeneral};
 use std::{str::FromStr, sync::Arc};
@@ -15,11 +16,10 @@ pub async fn get_transactions(
     Ok(transactions)
 }
 pub async fn create_transaction(
-    db: &SqlitePool,
+    tx: &sqlx::Transaction
     transaction_creation: models::transaction::TransactionCreation,
 ) -> Result<models::transaction::TransactionCreation, Box<dyn std::error::Error>> {
     tracing::info!("Invocation to `create_transaction`");
-    let mut tx = db.begin().await?;
     // get account and checck balance
     let account_number = transaction_creation.account_number.to_string();
     let mut balance: f32 =
@@ -28,7 +28,7 @@ pub async fn create_transaction(
             .fetch_one(&mut *tx)
             .await?;
     if transaction_creation.amount > balance {
-        return Err("Insufficient funds".into());
+        return enums::errors::Error::DataError("Insufficient Funds");
     }
     sqlx::query("INSERT INTO TRANSACTIONS (account_number, seller, amount) VALUES (?, ?, ?);")
         .bind(&account_number)

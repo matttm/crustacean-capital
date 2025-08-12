@@ -1,3 +1,4 @@
+pub mod enums;
 pub mod handlers;
 pub mod models;
 pub mod queries;
